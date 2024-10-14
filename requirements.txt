@@ -1,6 +1,5 @@
 streamlit
 pandas
 requests
-simplejson
+opencv-python-headless
 numpy
-opencv-python
