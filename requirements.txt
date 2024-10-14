@@ -2,5 +2,5 @@ streamlit
 pandas
 requests
 simplejson
-opencv-python
 numpy
+opencv-python
