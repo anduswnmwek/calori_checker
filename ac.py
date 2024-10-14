@@ -1,67 +1,52 @@
+from dotenv import load_dotenv
 import streamlit as st
-import pandas as pd
-import requests
-import json
-import cv2
-import numpy as np
-import base64
+import os
+import google.generativeai as genai
+from PIL import Image
 
-# Replace with your correct API key and endpoint
-api_key = "e4a92ac014b24410b5534a5dd0686236"
-api_endpoint = "https://api.spoonacular.com/food/products/search"
+load_dotenv()
 
-# Define a function to find calories based on food name or image
-def find_calories(query, is_image=False):
-    params = {
-        "apiKey": api_key,
-        "query": query,
-    }
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-    if is_image:
-        # Handle image separately if needed
-        params["image"] = query
-
-    response = requests.get(api_endpoint, params=params)
-    data = json.loads(response.text)
-
-    if response.status_code == 200 and "products" in data and data["products"]:
-        # Process results from API
-        products = data["products"][0]  # Assuming we take the first result
-        return f"{products['title']} has {products['nutrition']['calories']} calories per serving"
+def get_input_image_info(uploaded_file):
+    if uploaded_file is not None:
+        bytes_data = uploaded_file.getvalue()    ## read the file into bytes
+        image_parts = [
+            {
+                "mime_type":uploaded_file.type,   ## get the type of file
+                "data":bytes_data
+            }
+        ]
+        return image_parts
     else:
-        return "No data found for that food."
+        raise FileNotFoundError("No file uploaded")
+    
+st.set_page_config(page_title="Food Calorie")
 
-# Streamlit app
-st.title("Calorie Finder")
+st.header("Food Calories Web Application")
 
-# Camera feature
-if st.button("Take Photo"):
-    img_bytes = st.camera_input("Take a photo of the food")
-    if img_bytes:
-        img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), 1)
-        img = cv2.resize(img, (224, 224))
-        img_base64 = base64.b64encode(cv2.imencode('.jpg', img)[1]).decode()
-        result = find_calories(img_base64, is_image=True)
-        st.write(result)
+input = st.text_input("Ask any question:",key="input")
+uploaded_file = st.file_uploader("Choose an Invoice image..",type=["jpg","jpeg","png"])
+submit = st.button("Submit")
 
-# Image upload
-uploaded_image = st.file_uploader("Upload a food image")
+input_prompt = """You are an nutrition expert where you need to see the food items 
+present in the input image and answer the question being asked, if the user don't ask
+any question then calculate the total calories, also provide the details 
+of each food items with calorie intake in below format:
 
-# Text input for food name
-food_name = st.text_input("Enter a food name:")
+1. Item 1 - no of calories
+2. Item 2 - no of calories
+------
+------
+"""
 
-# Button to trigger the search
-if st.button("Find Calories"):
-    if uploaded_image:
-        img = cv2.imdecode(np.frombuffer(uploaded_image.getvalue(), np.uint8), 1)
-        img = cv2.resize(img, (224, 224))
-        img_base64 = base64.b64encode(cv2.imencode('.jpg', img)[1]).decode()
-        query = img_base64
-        is_image = True
-    else:
-        query = food_name
-        is_image = False
+def get_gemini_model_response(input_prompt,image,question):
+    model = genai.GenerativeModel("gemini-pro-vision")
+    response = model.generate_content([input_prompt,image,question])
+    return response.text
 
-    result = find_calories(query, is_image)
-    st.write(result)
+if submit:
+    image_data = get_input_image_info(uploaded_file)
+    model_response = get_gemini_model_response(input_prompt,image_data[0],input)
+    st.write(model_response)
 
