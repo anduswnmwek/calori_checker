@@ -44,9 +44,12 @@ def get_gemini_model_response(input_prompt,image,question):
     model = genai.GenerativeModel("gemini-pro-vision")
     response = model.generate_content([input_prompt,image,question])
     return response.text
-
 if submit:
-    image_data = get_input_image_info(uploaded_file)
-    model_response = get_gemini_model_response(input_prompt,image_data[0],input)
-    st.write(model_response)
-
+    if uploaded_file is not None:
+        st.write("Image uploaded")  # Debugging step
+        image_data = get_input_image_info(uploaded_file)
+        model_response = get_gemini_model_response(input_prompt, image_data[0], input)
+        st.write("API called")  # Debugging step
+        st.write(model_response)  # Display model response
+    else:
+        st.write("Please upload an image.")
