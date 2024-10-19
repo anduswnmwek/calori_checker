@@ -6,7 +6,7 @@ from PIL import Image
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key='AIzaSyAfXIC2XkKt8P8Piz1xK8GlLOtqFpunwes'))
 
 def get_input_image_info(uploaded_file):
     if uploaded_file is not None:
